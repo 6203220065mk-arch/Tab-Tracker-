@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedTrack Pro | Smart Stock & Refill Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class'
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen transition-colors duration-200 p-4 sm:p-8">
+
+    <div class="max-w-6xl mx-auto space-y-6">
+
+        <!-- Top Header Bar -->
+        <header class="flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
+            <div>
+                <h1 class="text-2xl font-black text-emerald-600 dark:text-emerald-400">MedTrack Pro</h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Automatic Medicine Stock & Refill Alert</p>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <button type="button" onclick="toggleGuide(true)" class="px-4 py-2 text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition">
+                    ❓ Kaise Use Karein?
+                </button>
+                <button type="button" onclick="toggleTheme()" class="px-3 py-2 text-sm bg-slate-100 dark:bg-slate-800 rounded-xl">
+                    <span id="themeEmoji">🌙</span> Mode
+                </button>
+            </div>
+        </header>
+
+        <!-- Stats Counter & Search -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-between shadow-sm">
+                <span class="text-xs font-bold text-slate-400 uppercase">Total Medicines</span>
+                <span id="totalCount" class="text-2xl font-black text-emerald-600">0</span>
+            </div>
+            <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-between shadow-sm">
+                <span class="text-xs font-bold text-slate-400 uppercase">Refill Alert (≤10 Din)</span>
+                <span id="alertCount" class="text-2xl font-black text-rose-600">0</span>
+            </div>
+            <div class="bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center shadow-sm">
+                <input type="text" id="searchInput" oninput="renderCards()" placeholder="Medicine search karein..." 
+                    class="w-full px-3 py-2 bg-transparent text-sm focus:outline-none">
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            
+            <!-- Left Side: Input Box -->
+            <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                <h2 id="formHeading" class="text-base font-bold border-b border-slate-100 dark:border-slate-800 pb-3">
+                    ➕ Nayi Medicine Add Karein
+                </h2>
+                
+                <input type="hidden" id="editIndex" value="-1">
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">Medicine Name *</label>
+                    <input type="text" id="mName" placeholder="eg: Paracetamol 650" 
+                        class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 mb-1">Total Tablets *</label>
+                        <input type="number" id="mQty" placeholder="eg: 60" 
+                            class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 mb-1">Daily Dose *</label>
+                        <input type="number" id="mDose" step="any" placeholder="eg: 2" 
+                            class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">Stock Fill Date *</label>
+                    <input type="date" id="mDate" 
+                        class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    <span class="text-[11px] text-slate-400">Is date se roz automatic dose ghategi.</span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">Routine / Notes (Optional)</label>
+                    <input type="text" id="mNotes" placeholder="eg: Khane ke baad" 
+                        class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+
+                <div class="pt-2 flex gap-2">
+                    <button type="button" id="saveBtn" onclick="saveMedicineDirect()" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition shadow-md">
+                        Save Medicine
+                    </button>
+                    <button type="button" id="cancelBtn" onclick="resetForm()" class="hidden px-4 py-3 bg-slate-200 dark:bg-slate-800 rounded-xl text-sm font-semibold">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Side: Cards List -->
+            <div class="lg:col-span-2 space-y-4">
+                <div id="cardList" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+
+                <!-- Empty State -->
+                <div id="noData" class="hidden text-center py-16 bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-800">
+                    <p class="text-sm font-bold text-slate-500">Abhi tak koi medicine add nahi hui hai.</p>
+                    <p class="text-xs text-slate-400 mt-1">Left side form bhariye aur "Save Medicine" button dabayein.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal Guide -->
+    <div id="helpModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4 z-50">
+        <div class="bg-white dark:bg-slate-900 max-w-md w-full p-6 rounded-2xl space-y-4 border border-slate-200 dark:border-slate-800">
+            <h3 class="text-lg font-bold">Kaise Kaam Karta Hai?</h3>
+            <ul class="text-sm space-y-2 text-slate-600 dark:text-slate-300 list-disc pl-5">
+                <li><strong>Auto-Deduction:</strong> Jis tarikh ko medicine fill karenge, wahan se lekar aaj ke din tak daily dose auto minus ho jayegi.</li>
+                <li><strong>10-Din Reminder:</strong> Stock 10 din se kam aate hi red alert badge aa jayega.</li>
+                <li><strong>Refill:</strong> Card me 'Refill' par click karke naya stock update kar sakte hain.</li>
+            </ul>
+            <button type="button" onclick="toggleGuide(false)" class="w-full py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm">
+                Theek Hai, Close
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Set Today Date Default
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('mDate').value = today;
+
+        let db = [];
+        try {
+            const raw = localStorage.getItem('MED_DATA_V3');
+            db = raw ? JSON.parse(raw) : [];
+            if (!Array.isArray(db)) db = [];
+        } catch (e) {
+            db = [];
+        }
+
+        function calculateStock(item) {
+            const startDate = new Date(item.date);
+            const now = new Date();
+            startDate.setHours(0,0,0,0);
+            now.setHours(0,0,0,0);
+
+            const diffTime = now - startDate;
+            const diffDays = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+
+            const used = diffDays * Number(item.dose);
+            const left = Math.max(0, Number((item.qty - used).toFixed(1)));
+            const daysLeft = item.dose > 0 ? Math.floor(left / item.dose) : 0;
+
+            return { left, daysLeft, diffDays };
+        }
+
+        function renderCards() {
+            const container = document.getElementById('cardList');
+            const noData = document.getElementById('noData');
+            const search = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+
+            container.innerHTML = '';
+            let alertTotal = 0;
+
+            const filtered = db.filter(x => x.name.toLowerCase().includes(search));
+            document.getElementById('totalCount').innerText = db.length;
+
+            if (filtered.length === 0) {
+                noData.classList.remove('hidden');
+            } else {
+                noData.classList.add('hidden');
+            }
+
+            db.forEach(x => {
+                const res = calculateStock(x);
+                if (res.daysLeft <= 10) alertTotal++;
+            });
+            document.getElementById('alertCount').innerText = alertTotal;
+
+            filtered.forEach((item) => {
+                const realIndex = db.indexOf(item);
+                const calc = calculateStock(item);
+                const isAlert = calc.daysLeft <= 10;
+
+                const card = document.createElement('div');
+                card.className = `p-5 rounded-2xl border shadow-sm flex flex-col justify-between ${
+                    isAlert 
+                    ? 'bg-rose-50/40 dark:bg-rose-950/20 border-rose-300 dark:border-rose-900' 
+                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
+                }`;
+
+                card.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="flex items-start justify-between gap-2">
+                            <div>
+                                <h4 class="font-extrabold text-base">${item.name}</h4>
+                                ${item.notes ? `<p class="text-xs text-slate-400">${item.notes}</p>` : ''}
+                            </div>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                isAlert ? 'bg-rose-100 text-rose-700 dark:bg-rose-900 dark:text-rose-200' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-200'
+                            }">
+                                ${isAlert ? '⚠️ Refill Reminder' : 'Safe Stock'}
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl text-center">
+                            <div>
+                                <span class="text-[10px] text-slate-400 block font-semibold">Bachi Hui Dawa</span>
+                                <span class="text-lg font-bold">${calc.left} <span class="text-xs font-normal text-slate-400">/ ${item.qty}</span></span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-slate-400 block font-semibold">Kitne Din Bachi</span>
+                                <span class="text-lg font-bold ${isAlert ? 'text-rose-600' : 'text-emerald-600'}">${calc.daysLeft} Din</span>
+                            </div>
+                        </div>
+
+                        <div class="text-[11px] text-slate-400 flex justify-between">
+                            <span>Dose: <b>${item.dose}/din</b></span>
+                            <span>Filled: <b>${item.date}</b></span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3 mt-3">
+                        <button type="button" onclick="refillMedicine(${realIndex})" class="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline">
+                            🔄 Refill Karein
+                        </button>
+                        <div class="space-x-2">
+                            <button type="button" onclick="editMedicine(${realIndex})" class="text-xs font-semibold px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg">Edit</button>
+                            <button type="button" onclick="deleteMedicine(${realIndex})" class="text-xs font-semibold px-2 py-1 bg-rose-50 text-rose-600 dark:bg-rose-950 rounded-lg">Delete</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Direct Save Handler
+        function saveMedicineDirect() {
+            const editIdx = parseInt(document.getElementById('editIndex').value, 10);
+            const name = document.getElementById('mName').value.trim();
+            const qty = parseFloat(document.getElementById('mQty').value);
+            const dose = parseFloat(document.getElementById('mDose').value);
+            const date = document.getElementById('mDate').value;
+            const notes = document.getElementById('mNotes').value.trim();
+
+            if (!name) {
+                alert("Medicine ka naam likhiye!");
+                return;
+            }
+            if (isNaN(qty) || qty <= 0) {
+                alert("Sahi Stock Quantity daliye!");
+                return;
+            }
+            if (isNaN(dose) || dose <= 0) {
+                alert("Sahi Daily Dose daliye!");
+                return;
+            }
+            if (!date) {
+                alert("Date select kijiye!");
+                return;
+            }
+
+            const item = { name, qty, dose, date, notes };
+
+            if (editIdx === -1) {
+                db.unshift(item);
+            } else {
+                db[editIdx] = item;
+            }
+
+            localStorage.setItem('MED_DATA_V3', JSON.stringify(db));
+            resetForm();
+            renderCards();
+            alert("Medicine successfully save ho gayi!");
+        }
+
+        function resetForm() {
+            document.getElementById('editIndex').value = "-1";
+            document.getElementById('mName').value = "";
+            document.getElementById('mQty').value = "";
+            document.getElementById('mDose').value = "";
+            document.getElementById('mDate').value = today;
+            document.getElementById('mNotes').value = "";
+            document.getElementById('formHeading').innerText = "➕ Nayi Medicine Add Karein";
+            document.getElementById('saveBtn').innerText = "Save Medicine";
+            document.getElementById('cancelBtn').classList.add('hidden');
+        }
+
+        function editMedicine(idx) {
+            const itm = db[idx];
+            if (!itm) return;
+            document.getElementById('editIndex').value = idx;
+            document.getElementById('mName').value = itm.name;
+            document.getElementById('mQty').value = itm.qty;
+            document.getElementById('mDose').value = itm.dose;
+            document.getElementById('mDate').value = itm.date;
+            document.getElementById('mNotes').value = itm.notes || "";
+            document.getElementById('formHeading').innerText = "✏️ Medicine Edit Karein";
+            document.getElementById('saveBtn').innerText = "Update Karein";
+            document.getElementById('cancelBtn').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function deleteMedicine(idx) {
+            if (confirm(`Kya aap "${db[idx].name}" ko delete karna chahte hain?`)) {
+                db.splice(idx, 1);
+                localStorage.setItem('MED_DATA_V3', JSON.stringify(db));
+                renderCards();
+            }
+        }
+
+        function refillMedicine(idx) {
+            const itm = db[idx];
+            const newCount = prompt(`"${itm.name}" ka kitna naya stock laya?`, "30");
+            if (newCount && !isNaN(newCount) && Number(newCount) > 0) {
+                itm.qty = Number(newCount);
+                itm.date = today;
+                localStorage.setItem('MED_DATA_V3', JSON.stringify(db));
+                renderCards();
+                alert("Stock refill ho gaya aur date aaj se restart ho gayi!");
+            }
+        }
+
+        function toggleGuide(show) {
+            const el = document.getElementById('helpModal');
+            el.style.display = show ? 'flex' : 'none';
+        }
+
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            document.getElementById('themeEmoji').innerText = isDark ? '☀️' : '🌙';
+            localStorage.setItem('THEME_V3', isDark ? 'dark' : 'light');
+        }
+
+        (function init() {
+            if (localStorage.getItem('THEME_V3') === 'dark') {
+                document.documentElement.classList.add('dark');
+                document.getElementById('themeEmoji').innerText = '☀️';
+            }
+            renderCards();
+        })();
+    </script>
+</body>
+      </html>
+      
